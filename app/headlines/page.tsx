@@ -82,7 +82,7 @@ export default function HeadlinesPage() {
         </select>
 
         <a
-          href="/api/import"
+          href={`/api/import?key=${process.env.NEXT_PUBLIC_IMPORT_KEY}`}
           style={{ marginLeft: "auto", textDecoration: "underline" }}
           target="_blank"
           rel="noreferrer"
