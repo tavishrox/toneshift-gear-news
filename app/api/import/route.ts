@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const importKey = process.env.IMPORT_KEY!;
 
 const supabase = createClient(supabaseUrl, serviceKey);
 
@@ -25,7 +26,19 @@ function normaliseDate(item: FeedItem): string | null {
   return isNaN(dt.getTime()) ? null : dt.toISOString();
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Require key
+  const { searchParams } = new URL(req.url);
+  const key = searchParams.get("key");
+
+  if (!importKey) {
+    return new NextResponse("Missing IMPORT_KEY", { status: 500 });
+  }
+
+  if (key !== importKey) {
+    return new NextResponse("Forbidden", { status: 403 });
+  }
+
   if (!supabaseUrl || !serviceKey) {
     return NextResponse.json({ ok: false, error: "Missing env vars" }, { status: 500 });
   }
@@ -37,7 +50,7 @@ export async function GET() {
 
   const { data: sources, error: srcErr } = await supabase
     .from("sources")
-    .select("id,name,type,url,enabled")
+    .select("id,name,url")
     .eq("enabled", true);
 
   if (srcErr) {
@@ -74,7 +87,7 @@ export async function GET() {
         })
         .filter(Boolean) as any[];
 
-      if (rows.length === 0) continue;
+      if (!rows.length) continue;
 
       const { error: upErr } = await supabase
         .from("items")
